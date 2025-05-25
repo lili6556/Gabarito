@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8" />
+    <title>Corrigir Prova</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+        :root {
+            --cor-fundo: linear-gradient(135deg, #4ab5cd, #fcfbfb);
+            --cor-card: #ffffff;
+            --cor-btn: #5bb3dc;
+            --cor-btn-hover: #469ac8;
+        }
+        body {
+            background: var(--cor-fundo);
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .card-form {
+            background-color: var(--cor-card);
+            padding: 35px 40px;
+            border-radius: 18px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+            width: 100%;
+            max-width: 520px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        h2 {
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 30px;
+            user-select: none;
+        }
+        form .form-label {
+            font-weight: 600;
+            color: #444;
+        }
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 1.8px solid #ddd;
+            transition: border-color 0.25s ease;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--cor-btn);
+            box-shadow: 0 0 6px var(--cor-btn);
+            outline: none;
+        }
+        .btn-custom {
+            background-color: var(--cor-btn);
+            color: #fff;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+            border: none;
+            user-select: none;
+        }
+        .btn-custom:hover:not(:disabled) {
+            background-color: var(--cor-btn-hover);
+        }
+        .btn-custom:disabled {
+            background-color: #a1c6db;
+            cursor: not-allowed;
+        }
+        video {
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            user-select: none;
+            background-color: #000;
+            display: none; /* começa escondido */
+        }
+        #snapshot {
+            display: none;
+        }
+        .mt-4 {
+            margin-top: 1.5rem !important;
+        }
+        .mb-2 {
+            margin-bottom: 0.5rem !important;
+        }
+        a.btn-secondary {
+            border-radius: 10px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card-form">
+    <h2>Corrigir Prova</h2>
+
+    <form method="post" enctype="multipart/form-data" autocomplete="off">
+
+        <div class="mb-4 text-start">
+            <label for="nomeProva" class="form-label">Qual o nome da prova?</label>
+            <select id="nomeProva" name="nome_prova" class="form-select" required>
+                <option value="" disabled selected>Selecione a prova</option>
+                {% for prova in provas %}
+                <option value="{{ prova }}">{{ prova }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-4 text-start">
+            <label for="nomeAluno" class="form-label">Nome do Aluno(a):</label>
+            <input type="text" id="nomeAluno" name="nome_aluno" class="form-control" placeholder="Digite o nome completo" required>
+        </div>
+
+        <div class="mb-4 text-start">
+            <label class="form-label d-block mb-2">Opção 1: Tirar Foto com a Câmera</label>
+            <button type="button" id="startCamera" class="btn btn-custom w-100 mb-2">📷 Scanear</button>
+            <video id="cameraStream" autoplay muted playsinline></video>
+            <button type="button" id="snap" class="btn btn-custom w-100 mb-2" style="display:none;">📸 Tirar Foto</button>
+            <input type="hidden" name="fotoCamera" id="cameraInput">
+            <canvas id="snapshot"></canvas>
+        </div>
+
+        <div class="mb-4 text-start">
+            <label for="fotoGabarito" class="form-label">Opção 2: Selecionar Arquivo do Computador</label>
+            <input type="file" id="fotoGabarito" name="fotoGabarito" class="form-control" accept="image/*">
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-custom w-100">✅ Corrigir</button>
+        </div>
+    </form>
+
+    <a href="{{ url_for('base') }}" class="btn btn-secondary mt-3 w-100">🔙 Voltar para Base</a>
+</div>
+
+<script>
+    const startCameraButton = document.getElementById('startCamera');
+    const video = document.getElementById('cameraStream');
+    const snapButton = document.getElementById('snap');
+    const canvas = document.getElementById('snapshot');
+    const cameraInput = document.getElementById('cameraInput');
+
+    let stream;
+
+    startCameraButton.addEventListener('click', async () => {
+        if (!stream) {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                video.style.display = 'block';
+                snapButton.style.display = 'block';
+                startCameraButton.style.display = 'none'; // esconde o botão scanear depois de ativar
+            } catch (err) {
+                alert('Não foi possível acessar a câmera.');
+                console.error(err);
+            }
+        }
+    });
+
+    snapButton.addEventListener('click', () => {
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const dataURL = canvas.toDataURL('image/png');
+            cameraInput.value = dataURL;
+
+            alert("Foto capturada! Agora é só enviar o formulário.");
+        } else {
+            alert("Câmera ainda não está pronta. Tente novamente.");
+        }
+    });
+</script>
+
+</body>
+</html>

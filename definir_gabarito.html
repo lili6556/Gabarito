@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8" />
+    <title>Definir Gabarito</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #70c9e6, #cfdef3);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+        .card {
+            padding: 30px 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            background: #fff;
+            width: 100%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        h3 {
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 30px;
+            color: #383939;
+        }
+        label {
+            font-weight: 600;
+            color: #3c3c3c;
+        }
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-start;
+            margin-top: 5px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .valor-questao {
+            margin-top: 10px;
+        }
+        .btn {
+            border-radius: 30px;
+            padding: 10px 20px;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+        .question-block {
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eceaea;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h3>Definir Gabarito</h3>
+
+    <!-- Passo 1: Definir nome da prova, número de questões e alternativas -->
+    <form id="formDefinir" onsubmit="return gerarGabarito(event)" method="post">
+        <div class="mb-3">
+            <label for="nomeProva" class="form-label">Nome da Prova</label>
+            <input type="text" class="form-control" id="nomeProva" name="nome_prova" required placeholder="Exemplo: Prova 1" />
+        </div>
+        <div class="mb-3">
+            <label for="numQuestoes" class="form-label">Quantas questões terá a prova?</label>
+            <input type="number" class="form-control" id="numQuestoes" name="num_questoes" min="1" max="50" required placeholder="Exemplo: 10" />
+        </div>
+        <div class="mb-3">
+            <label for="numAlternativas" class="form-label">Quantas alternativas por questão?</label>
+            <select class="form-select" id="numAlternativas" name="num_alternativas" required>
+                <option value="" disabled selected>Selecione</option>
+                <option value="2">2 (A, B)</option>
+                <option value="3">3 (A, B, C)</option>
+                <option value="4">4 (A, B, C, D)</option>
+                <option value="5">5 (A, B, C, D, E)</option>
+            </select>
+        </div>
+
+        <div class="btn-group w-100 mt-3" role="group" aria-label="Ações">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle"></i> Definir questões
+            </button>
+            <a href="{{ url_for('base') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </form>
+
+    <!-- Passo 2: Formulário dinâmico do gabarito -->
+    <form id="formGabarito" method="post" style="display:none; margin-top: 30px;">
+        <input type="hidden" name="nome_prova" id="nome_prova_hidden" />
+        <input type="hidden" name="num_questoes" id="num_questoes_hidden" />
+        <div id="gabaritoContainer"></div>
+
+        <div class="btn-group w-100 mt-4" role="group" aria-label="Ações">
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-save"></i> Salvar Gabarito
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="voltar()">
+                <i class="bi bi-arrow-left-circle"></i> Voltar
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    const letrasAlternativas = ['A', 'B', 'C', 'D', 'E'];
+
+    function gerarGabarito(event) {
+        event.preventDefault();
+
+        const nomeProva = document.getElementById('nomeProva').value.trim();
+        const numQuestoes = parseInt(document.getElementById('numQuestoes').value);
+        const numAlternativas = parseInt(document.getElementById('numAlternativas').value);
+
+        if (!nomeProva) {
+            alert('Informe o nome da prova');
+            return false;
+        }
+        if (!numQuestoes || !numAlternativas) return false;
+
+        const container = document.getElementById('gabaritoContainer');
+        container.innerHTML = '';
+
+        for (let i = 1; i <= numQuestoes; i++) {
+            const divQuestao = document.createElement('div');
+            divQuestao.classList.add('question-block');
+
+            const label = document.createElement('label');
+            label.classList.add('form-label');
+            label.textContent = `Questão ${i}`;
+            divQuestao.appendChild(label);
+
+            const radioGroup = document.createElement('div');
+            radioGroup.classList.add('radio-group');
+
+            for (let j = 0; j < numAlternativas; j++) {
+                const alternativa = letrasAlternativas[j];
+
+                const formCheck = document.createElement('div');
+                formCheck.classList.add('form-check');
+
+                const input = document.createElement('input');
+                input.classList.add('form-check-input');
+                input.type = 'radio';
+                input.name = `gabarito_${i}`;
+                input.id = `q${i}${alternativa}`;
+                input.value = alternativa;
+                if (j === 0) input.required = true;
+
+                const labelAlt = document.createElement('label');
+                labelAlt.classList.add('form-check-label');
+                labelAlt.setAttribute('for', `q${i}${alternativa}`);
+                labelAlt.textContent = alternativa;
+
+                formCheck.appendChild(input);
+                formCheck.appendChild(labelAlt);
+                radioGroup.appendChild(formCheck);
+            }
+
+            divQuestao.appendChild(radioGroup);
+
+            // Campo para definir o valor da questão
+            const valorDiv = document.createElement('div');
+            valorDiv.classList.add('valor-questao');
+
+            const valorLabel = document.createElement('label');
+            valorLabel.classList.add('form-label');
+            valorLabel.setAttribute('for', `valor_q${i}`);
+            valorLabel.textContent = 'Valor da questão:';
+
+            const valorInput = document.createElement('input');
+            valorInput.classList.add('form-control');
+            valorInput.type = 'number';
+            valorInput.step = '0.1';
+            valorInput.min = '0.1';
+            valorInput.value = '1';
+            valorInput.name = `valor_${i}`;
+            valorInput.id = `valor_q${i}`;
+            valorInput.required = true;
+
+            valorDiv.appendChild(valorLabel);
+            valorDiv.appendChild(valorInput);
+
+            divQuestao.appendChild(valorDiv);
+
+            container.appendChild(divQuestao);
+        }
+
+        // Passar nome da prova e número de questões para o segundo form
+        document.getElementById('nome_prova_hidden').value = nomeProva;
+        document.getElementById('num_questoes_hidden').value = numQuestoes;
+
+        document.getElementById('formDefinir').style.display = 'none';
+        document.getElementById('formGabarito').style.display = 'block';
+
+        return false;
+    }
+
+    function voltar() {
+        document.getElementById('formGabarito').style.display = 'none';
+        document.getElementById('formDefinir').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
